@@ -1,4 +1,4 @@
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from vasicek_multifactor import simulate_multifactor_vasicek
@@ -75,3 +75,38 @@ def generate_dataset(n_samples=800):
     )
 
     return pd.DataFrame(data, columns=columns)
+
+def plot_sample_initial_curves(n_curves=5):
+    """
+    Plot several randomly generated initial forward curves
+    using the Nelson–Siegel structure.
+    """
+
+    tenor_years = np.array([0.25, 0.5, 1, 2, 5, 10, 20, 30])
+
+    plt.figure(figsize=(8, 5))
+
+    for _ in range(n_curves):
+
+        # Same structure used in dataset generation
+        level = np.random.normal(0.04, 0.005)
+        slope = np.random.normal(-0.015, 0.005)
+        curvature = np.random.normal(0.005, 0.003)
+        tau = 2.0
+
+        curve = (
+            level
+            + slope * np.exp(-tenor_years / tau)
+            + curvature * (tenor_years / tau) * np.exp(-tenor_years / tau)
+        )
+
+        curve = np.maximum(curve, 0.0001)
+
+        plt.plot(tenor_years, curve)
+
+    plt.xlabel("Maturity (Years)")
+    plt.ylabel("Forward Rate")
+    plt.title("Sample Generated Forward Curves")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
