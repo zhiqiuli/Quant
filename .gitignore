@@ -161,3 +161,4 @@ cython_debug/
 /.idea
 /mpe_xgboost_project/.idea
 .DS_Store
+/ClassicOptionPricing/pythonScript/EqDispersion

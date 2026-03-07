@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import yfinance as yf
 import pandas as pd
@@ -9,7 +10,8 @@ def calcVarCumSum(start_date,
                   calc_date,
                   valuation_date,
                   df_eq_dispersion,
-                  iv_bump_size=0):
+                  iv_bump_size=0,
+                  dir=''):
 
     cumsum = 0
 
@@ -17,7 +19,10 @@ def calcVarCumSum(start_date,
         ticker = row['Ticker']
 
         # cumsum log(S_i / S_{i-1})
-        variance_return = download_returns_to_csv(ticker, start_date, calc_date)
+        variance_return = download_returns_to_csv(ticker,
+                                                  start_date,
+                                                  calc_date,
+                                                  dir=dir)
 
         # Expected number of observation days
         Expected_N = row['Expected N']
@@ -80,7 +85,11 @@ def calcVarCumSum(start_date,
 
     return cumsum
 
-def download_returns_to_csv(ticker, start_date, end_date, interval="1d"):
+def download_returns_to_csv(ticker,
+                            start_date,
+                            end_date,
+                            interval="1d",
+                            dir=''):
 
     # Download data
     df = yf.download(
@@ -103,7 +112,10 @@ def download_returns_to_csv(ticker, start_date, end_date, interval="1d"):
 
     # Save to CSV
     filename = f"{ticker}_close_{start_date}_to_{end_date}.csv"
-    df.to_csv(r'./EqDispersion/' + filename, index=False)
+    output_dir = dir + r'/Output/'
+    print(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    df.to_csv(output_dir + filename, index=False)
 
     # print(f"Saved to {filename}")
 
@@ -120,25 +132,29 @@ if __name__ == "__main__":
 
     dir = r'./EqDispersion/'
 
-    df_eq_dispersion_single_names = pd.read_csv(dir + 'DispersionBasket1-SingleNames.csv')
-    df_eq_dispersion_index        = pd.read_csv(dir + 'DispersionBasket1-Index.csv')
+    df_eq_dispersion_single_names = pd.read_csv(dir + '/Input/DispersionBasket1-SingleNames.csv')
+    df_eq_dispersion_index        = pd.read_csv(dir + '/Input/DispersionBasket1-Index.csv')
 
     # dates in str
     start_date = datetime.datetime(2025, 7, 15).strftime("%Y-%m-%d") # +1 day
-    calc_date = datetime.datetime(2026, 2, 28).strftime("%Y-%m-%d") # +1 day as well, because Yahoo excludes the end_date
+    calc_date = datetime.datetime(2026, 3, 3).strftime("%Y-%m-%d") # +1 day as well, because Yahoo excludes the end_date
     valuation_date = datetime.datetime(2026, 6, 18).strftime("%Y-%m-%d")
-
 
     single_name_   = calcVarCumSum(start_date,
                                    calc_date,
                                    valuation_date,
-                                   df_eq_dispersion_single_names)
+                                   df_eq_dispersion_single_names,
+                                   iv_bump_size=0,
+                                   dir=dir)
+
     index_         = calcVarCumSum(start_date,
                                    calc_date,
                                    valuation_date,
-                                   df_eq_dispersion_index)
+                                   df_eq_dispersion_index,
+                                   iv_bump_size=0,
+                                   dir=dir)
 
-    print((single_name_ - index_))
+    print(f'SingleNames - Index = {single_name_ - index_:,.2f}')
 
     if False:
         single_name_   = calcVarCumSum(start_date,
@@ -146,12 +162,11 @@ if __name__ == "__main__":
                                        valuation_date,
                                        df_eq_dispersion_single_names,
                                        0.01)
+
         index_         = calcVarCumSum(start_date,
                                        calc_date,
                                        valuation_date,
                                        df_eq_dispersion_index,
                                        0.01)
 
-        print((single_name_ - index_))
-
-
+        print(f'SingleNames - Index = {single_name_ - index_:,.2f}')
