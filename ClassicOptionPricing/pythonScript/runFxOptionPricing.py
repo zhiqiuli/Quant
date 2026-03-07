@@ -66,4 +66,4 @@ if __name__ == "__main__":
     )
 
     premium_jpy = price * 1_000_000
-    print(premium_jpy)
+    print(f'Option Premium (JPY)={premium_jpy:,.2f}')
