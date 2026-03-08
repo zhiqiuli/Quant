@@ -45,8 +45,13 @@ def calcVarCumSum(start_date,
 
         N_rem = len(sched_rem)
 
-        # --- Implied Vol (decimal, e.g. 0.16 = 16%)
+        # Implied vols are used as a proxy here. The more accurate way it so calculate the fwd variance. A separate Python project will cover that part.
+        # Implied Vol means Decimal 0.16 = 16%
+        # Basket 1
         IV_i = row['20260616 100% ATM VOL As Of 20260227 (BBG)']
+
+        # Basket 2
+        # IV_i = row['20270617 100% ATM VOL As Of 20260305 (BBG)']
 
         # Share Final Realized Vol
         sigma_real_sq  = 252 * variance_return / Expected_N
@@ -66,6 +71,7 @@ def calcVarCumSum(start_date,
         SVK_i = row['Volatility Strike']
 
         # Share Vol Cap
+        # Note that, sometime this quantity is 2.5x, then it's 2.5x Volatility Strike
         SVC_i = row['Volatility Cap']
 
         Val_i = SVA_i * (np.minimum(SFRV_i, SVC_i) - SVK_i)
@@ -113,7 +119,6 @@ def download_returns_to_csv(ticker,
     # Save to CSV
     filename = f"{ticker}_close_{start_date}_to_{end_date}.csv"
     output_dir = dir + r'/Output/'
-    print(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     df.to_csv(output_dir + filename, index=False)
 
@@ -132,13 +137,19 @@ if __name__ == "__main__":
 
     dir = r'./EqDispersion/'
 
+    # basket 1
     df_eq_dispersion_single_names = pd.read_csv(dir + '/Input/DispersionBasket1-SingleNames.csv')
     df_eq_dispersion_index        = pd.read_csv(dir + '/Input/DispersionBasket1-Index.csv')
+    start_date                    = datetime.datetime(2025, 7, 15).strftime("%Y-%m-%d") # +1 day
+    calc_date                     = datetime.datetime(2026, 3, 3).strftime("%Y-%m-%d") # +1 day as well, because Yahoo excludes the end_date
+    valuation_date                = datetime.datetime(2026, 6, 18).strftime("%Y-%m-%d")
 
-    # dates in str
-    start_date = datetime.datetime(2025, 7, 15).strftime("%Y-%m-%d") # +1 day
-    calc_date = datetime.datetime(2026, 3, 3).strftime("%Y-%m-%d") # +1 day as well, because Yahoo excludes the end_date
-    valuation_date = datetime.datetime(2026, 6, 18).strftime("%Y-%m-%d")
+    # basket 2
+    # df_eq_dispersion_single_names = pd.read_csv(dir + '/Input/DispersionBasket2-SingleNames.csv')
+    # df_eq_dispersion_index        = pd.read_csv(dir + '/Input/DispersionBasket2-Index.csv')
+    # start_date                    = datetime.datetime(2026, 2, 28).strftime("%Y-%m-%d") # +1 day
+    # calc_date                     = datetime.datetime(2026, 3, 6).strftime("%Y-%m-%d") # +1 day as well, because Yahoo excludes the end_date
+    # valuation_date                = datetime.datetime(2027, 6, 17).strftime("%Y-%m-%d")
 
     single_name_   = calcVarCumSum(start_date,
                                    calc_date,
