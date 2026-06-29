@@ -163,3 +163,5 @@ cython_debug/
 .DS_Store
 /ClassicOptionPricing/pythonScript/EqDispersion
 ClassicOptionPricing/pythonScript/EquitySpreadOptionContingentOnFx/params.yaml
+/alpaca_trading_project
+/Trading
