@@ -1,40 +1,75 @@
+from pathlib import Path
+
 import numpy as np
+import yaml
+
+_DEFAULT_YAML = Path(__file__).parent / "EquitySpreadOptionContingentOnFx" / "params.yaml"
+
+
+def load_params(yaml_path=None):
+    """Load market and simulation parameters from a YAML file into a flat dict."""
+    path = Path(yaml_path) if yaml_path else _DEFAULT_YAML
+    with open(path) as f:
+        cfg = yaml.safe_load(f)
+    m = cfg["market"]
+    s = cfg["simulation"]
+    return dict(
+        notional         = m["notional"],
+        premium          = m["premium"],
+        spx_0            = m["spots"]["spx_0"],
+        sx5e_0           = m["spots"]["sx5e_0"],
+        eurusd_0         = m["spots"]["eurusd_0"],
+        spx_fwd          = m["forwards"]["spx_fwd"],
+        sx5e_fwd         = m["forwards"]["sx5e_fwd"],
+        eurusd_fwd       = m["forwards"]["eurusd_fwd"],
+        spx_vol          = m["vols"]["spx_vol"],
+        sx5e_vol         = m["vols"]["sx5e_vol"],
+        eurusd_vol       = m["vols"]["eurusd_vol"],
+        corr_spx_sx5e    = m["correlations"]["corr_spx_sx5e"],
+        corr_spx_eurusd  = m["correlations"]["corr_spx_eurusd"],
+        corr_sx5e_eurusd = m["correlations"]["corr_sx5e_eurusd"],
+        T_option         = m["time"]["T_option_days"] / 365,
+        T_discount       = m["time"]["T_discount_days"] / 365,
+        sofr_rate        = m["rates"]["sofr_rate"],
+        n_paths          = s["n_paths"],
+        seed             = s["seed"],
+    )
 
 
 def price_relative_perf_fx_trigger_mc(
-    notional: float = 12_886_000,
-    premium: float = 249_988.40,
+    notional: float,
+    premium: float,
 
     # Initial levels
-    spx_0: float = 7117.5,
-    sx5e_0: float = 5889.0,
-    eurusd_0: float = 1.1572,
+    spx_0: float,
+    sx5e_0: float,
+    eurusd_0: float,
 
     # Forward levels to option expiry
-    spx_fwd: float = 7198.25,
-    sx5e_fwd: float = 5878.0,
-    eurusd_fwd: float = 1.176,
+    spx_fwd: float,
+    sx5e_fwd: float,
+    eurusd_fwd: float,
 
     # Implied vols
-    spx_vol: float = 0.176,
-    sx5e_vol: float = 0.180,
-    eurusd_vol: float = 0.063,
+    spx_vol: float,
+    sx5e_vol: float,
+    eurusd_vol: float,
 
     # Correlations
-    corr_spx_sx5e: float = 0.399,
-    corr_spx_eurusd: float = 0.094,
-    corr_sx5e_eurusd: float = 0.127,
+    corr_spx_sx5e: float,
+    corr_spx_eurusd: float,
+    corr_sx5e_eurusd: float,
 
     # Time
-    T_option: float = 148 / 365,
-    T_discount: float = 152 / 365,
+    T_option: float,
+    T_discount: float,
 
     # Discount rate
-    sofr_rate: float = 0.0368,
+    sofr_rate: float,
 
     # MC settings
-    n_paths: int = 1_000_000,
-    seed: int = 42,
+    n_paths: int,
+    seed: int,
 ):
     """
     Price payoff:
@@ -153,7 +188,7 @@ def price_relative_perf_fx_trigger_mc(
 
 if __name__ == "__main__":
 
-    results = price_relative_perf_fx_trigger_mc()
+    results = price_relative_perf_fx_trigger_mc(**load_params())
 
     print("Monte Carlo Pricing Results")
     print("-" * 40)

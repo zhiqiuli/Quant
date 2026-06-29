@@ -26,42 +26,29 @@ Output fields (per Greek)
   pct_notional = dollar_pnl / Notional   [%]
 """
 
-import numpy as np
+from pathlib import Path
 from typing import Dict
 
-from EquitySpreadOptionContingentOnFx import price_relative_perf_fx_trigger_mc
+import numpy as np
+import yaml
 
+from EquitySpreadOptionContingentOnFx import load_params, price_relative_perf_fx_trigger_mc
 
 # ---------------------------------------------------------------------------
-# Default market parameters  (single source of truth)
+# Load all parameters from YAML  (single source of truth)
 # ---------------------------------------------------------------------------
-DEFAULT_PARAMS: Dict = dict(
-    notional         = 12_886_000,
-    premium          = 249_988.40,
-    spx_0            = 7117.5,
-    sx5e_0           = 5889.0,
-    eurusd_0         = 1.1572,
-    spx_fwd          = 7198.25,
-    sx5e_fwd         = 5878.0,
-    eurusd_fwd       = 1.176 - 0.003,
-    spx_vol          = 0.176,
-    sx5e_vol         = 0.180,
-    eurusd_vol       = 0.063 + 0.02,
-    corr_spx_sx5e    = 0.399,
-    corr_spx_eurusd  = 0.094,
-    corr_sx5e_eurusd = 0.127,
-    T_option         = 148 / 365,
-    T_discount       = 152 / 365,
-    sofr_rate        = 0.0368,
-    n_paths          = 1_000_000,
-    seed             = 42,
-)
+_yaml_path = Path(__file__).parent / "EquitySpreadOptionContingentOnFx" / "params.yaml"
+with open(_yaml_path) as _f:
+    _cfg = yaml.safe_load(_f)
+
+DEFAULT_PARAMS: Dict = load_params(_yaml_path)
 
 # Bump sizes
-EQUITY_FWD_BUMP_PCT = 0.01        # 1% relative bump on equity forwards
-FX_FWD_BUMP_PCT     = 0.01        # 1% relative bump on EURUSD forward
-VOL_BUMP_BPS        = 10          # bump vol by 10 bp; vega = ΔPV / 10  (per 1 bp)
-CORR_BUMP_BPS       = 10          # bump corr by 10 bp; rho01 = ΔPV / 10 (per 1 bp)
+_bumps = _cfg["greeks"]["bumps"]
+EQUITY_FWD_BUMP_PCT = _bumps["equity_fwd_pct"]
+FX_FWD_BUMP_PCT     = _bumps["fx_fwd_pct"]
+VOL_BUMP_BPS        = _bumps["vol_bps"]
+CORR_BUMP_BPS       = _bumps["corr_bps"]
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +74,8 @@ def _greek_row(label: str, bump_desc: str, pv_bumped: float,
         "pv_bumped":        pv_bumped,
         "raw_dollar_pnl":   raw_dv,                    # full bump ΔPV
         "dollar_pnl":       dv,                         # per-unit ΔPV
-        "pct_notional":     dv / notional,
+        # "pct_notional":     dv / notional,
+        "pct_base_pv":     dv / base_pv,
         "per_bp_divisor":   per_bp_divisor,
     }
 
@@ -108,12 +96,15 @@ def equity_delta(base_pv: float,
     pv_spx   = _price(spx_fwd  = p["spx_fwd"]  * (1 + bump_pct))
     pv_sx5e  = _price(sx5e_fwd = p["sx5e_fwd"] * (1 + bump_pct))
     pv_joint = _price(spx_fwd  = p["spx_fwd"]  * (1 + bump_pct),
-                      sx5e_fwd = p["sx5e_fwd"] * (1 + 0.4 * bump_pct))
+                      sx5e_fwd = p["sx5e_fwd"] * (1 + bump_pct))
+    pv_joint_beta_adj = _price(spx_fwd  = p["spx_fwd"]  * (1 +       bump_pct),
+                               sx5e_fwd = p["sx5e_fwd"] * (1 + 0.4 * bump_pct))
 
     return {
         "spx_delta":   _greek_row("SPX Delta  (+1% SPX fwd)",           desc, pv_spx,   base_pv, ntl),
         "sx5e_delta":  _greek_row("SX5E Delta (+1% SX5E fwd)",          desc, pv_sx5e,  base_pv, ntl),
         "joint_delta": _greek_row("Joint Equity Delta (+1% both fwds)", desc, pv_joint, base_pv, ntl),
+        "joint_delta_beta_adj": _greek_row("Joint Equity Delta (+1% SPX and +0.4% SX5E)", desc, pv_joint_beta_adj, base_pv, ntl),
     }
 
 
@@ -273,7 +264,8 @@ def _print_results(r: Dict) -> None:
             divisor = int(g["per_bp_divisor"])
             print(f"    Raw ΔPV    ($) : ${g['raw_dollar_pnl']:>+13,.2f}  (full {divisor} bp move)")
         print(f"    ΔPV/bp     ($) : ${g['dollar_pnl']:>+13,.2f}  (per 1 bp)")
-        print(f"    ΔPV/bp (% Ntl) : {g['pct_notional']:>+11.4%}  (per 1 bp)")
+        # print(f"    ΔPV/bp (% Ntl) : {g['pct_notional']:>+11.4%}  (per 1 bp)")
+        print(f"    ΔPV/bp (% Base PV) : {g['pct_base_pv']:>+11.4%}  (per 1 bp)")
         print()
 
     def _delta_row(g: Dict) -> None:
@@ -281,7 +273,8 @@ def _print_results(r: Dict) -> None:
         print(f"    Bump           : {g['bump']}")
         print(f"    PV bumped  ($) : ${g['pv_bumped']:>13,.2f}")
         print(f"    ΔPV        ($) : ${g['dollar_pnl']:>+13,.2f}")
-        print(f"    ΔPV    (% Ntl) : {g['pct_notional']:>+11.4%}")
+        # print(f"    ΔPV    (% Ntl) : {g['pct_notional']:>+11.4%}")
+        print(f"    ΔPV    (% Base PV) : {g['pct_base_pv']:>+11.4%}")
         print()
 
     print(SEP)
@@ -297,7 +290,7 @@ def _print_results(r: Dict) -> None:
     print(THIN)
     print("  EQUITY DELTA  —  +1% on equity fwd  (spx_0 / sx5e_0 unchanged)")
     print(THIN)
-    for key in ("spx_delta", "sx5e_delta", "joint_delta"):
+    for key in ("spx_delta", "sx5e_delta", "joint_delta", "joint_delta_beta_adj"):
         _delta_row(r["equity_delta"][key])
 
     print(THIN)
