@@ -53,14 +53,15 @@ def calcVarCumSum(start_date,
         # Basket 2
         # IV_i = row['20270617 100% ATM VOL As Of 20260305 (BBG)']
 
-        # Share Final Realized Vol
+        # Term sheet convention: final realized variance uses the full expected
+        # observation count N in the denominator.
         sigma_real_sq  = 252 * variance_return / Expected_N
         sigma_fwd_sq   = ((IV_i + 100 * iv_bump_size) / 100) ** 2
 
         w_real         = N_real / Expected_N
         w_rem          = N_rem  / Expected_N
 
-        sigma_total_sq = w_real * sigma_real_sq + w_rem * sigma_fwd_sq
+        sigma_total_sq = sigma_real_sq + w_rem * sigma_fwd_sq
 
         SFRV_i = 100 * np.sqrt(sigma_total_sq)
 

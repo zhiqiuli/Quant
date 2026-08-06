@@ -1,0 +1,301 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+
+\title{Equity Dispersion Volatility Swap Payoff}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Trade Structure}
+
+An equity dispersion volatility swap package is usually composed of:
+
+\begin{itemize}[leftmargin=*]
+    \item long volatility swaps on a basket of single-name equities;
+    \item short volatility swap on the equity index, typically SPX.
+\end{itemize}
+
+The economic exposure is therefore:
+
+\begin{equation}
+    \Pi_{\mathrm{disp}}
+    =
+    \sum_{j \in \mathcal{S}} \Pi_j
+    -
+    \Pi_I ,
+\end{equation}
+
+where $\mathcal{S}$ is the set of single-name share transactions and $I$ is the index transaction. The volatility amounts or vega notionals in the term sheet already include the intended trade sizing, so no additional weight is needed unless the model starts from a raw index notional and separately allocates it across names.
+
+\section{Payoff Versus Valuation}
+
+The formulas below first define the terminal payoff at maturity. A mark-to-market valuation before maturity is not the payoff itself; it is the discounted expectation of that payoff under the risk-neutral measure:
+
+\begin{equation}
+    V_t
+    =
+    D(t,T)
+    \mathbb{E}_t^{\mathbb{Q}}
+    \left[
+        \Pi_{\mathrm{disp}}(T)
+    \right],
+\end{equation}
+
+where $D(t,T)$ is the discount factor from maturity $T$ to valuation time $t$. In practice, the expectation is estimated by combining realized variance already observed with a market-implied estimate of the remaining variance. The projected payoff formulas in the interim valuation section should therefore be read as a practical approximation to this expectation.
+
+\section{Final Realized Volatility}
+
+For each underlying $j$, let $P_{j,i}$ be the official closing price or level on observation day $i$. Define the daily log return as:
+
+\begin{equation}
+    r_{j,i}
+    =
+    \ln \left( \frac{P_{j,i}}{P_{j,i-1}} \right).
+\end{equation}
+
+The term-sheet style final realized volatility is:
+
+\begin{equation}
+    \mathrm{FRV}_j
+    =
+    100
+    \sqrt{
+        \frac{252}{N}
+        \sum_{i=1}^{N} r_{j,i}^{2}
+    },
+\end{equation}
+
+where $N$ is the expected number of scheduled trading days in the full observation period. The factor $252$ annualizes the realized variance, and the multiplier $100$ expresses volatility in percentage points.
+
+\section{Single Leg Payoff}
+
+For a volatility swap leg $j$, define:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
+\midrule
+$A_j$ & Volatility amount or vega notional, in USD per volatility point \\
+$K_j$ & Volatility strike, in volatility points \\
+$C_j$ & Volatility cap, in volatility points, if applicable \\
+$\mathrm{FRV}_j$ & Final realized volatility, in volatility points \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+If the leg is capped, the payoff to the volatility buyer is:
+
+\begin{equation}
+    \Pi_j
+    =
+    A_j
+    \left(
+        \min(\mathrm{FRV}_j, C_j) - K_j
+    \right).
+\end{equation}
+
+If the cap is not applicable, the payoff to the volatility buyer is:
+
+\begin{equation}
+    \Pi_j
+    =
+    A_j
+    \left(
+        \mathrm{FRV}_j - K_j
+    \right).
+\end{equation}
+
+The payoff to the volatility seller is the negative of the buyer payoff.
+
+\section{Dispersion Package Payoff}
+
+For a long-single-name-volatility and short-index-volatility dispersion package, the payoff is:
+
+\begin{equation}
+    \Pi_{\mathrm{disp}}
+    =
+    \sum_{j \in \mathcal{S}}
+    A_j
+    \left(
+        \min(\mathrm{FRV}_j, C_j) - K_j
+    \right)
+    -
+    A_I
+    \left(
+        \min(\mathrm{FRV}_I, C_I) - K_I
+    \right).
+\end{equation}
+
+This position benefits when realized single-name volatility is high relative to realized index volatility. Because index variance includes covariance terms, the package is closely related to a short correlation exposure:
+
+\begin{equation}
+    \sigma_I^2
+    \approx
+    \sum_j w_j^2 \sigma_j^2
+    +
+    2 \sum_{j<k} w_j w_k \rho_{jk} \sigma_j \sigma_k .
+\end{equation}
+
+Lower realized correlation reduces index volatility relative to the basket of single-name volatilities, which is favorable for a long dispersion position.
+
+\section{Interim Valuation Before Maturity}
+
+At a calculation date before final maturity, suppose $n$ log returns have already been observed. The realized contribution to annualized variance is:
+
+\begin{equation}
+    \mathrm{RealizedContribution}_j
+    =
+    \frac{252}{N}
+    \sum_{i=1}^{n} r_{j,i}^{2}.
+\end{equation}
+
+The important point is that this term is already divided by the full-period expected observation count $N$. It should not be multiplied again by $n/N$.
+
+Let $K_{\mathrm{var},j,\mathrm{fwd}}^2$ be the forward variance rate for the remaining observation period. A practical projected variance estimate is:
+
+\begin{equation}
+    \widehat{\sigma}_{j}^{2}
+    =
+    \frac{252}{N}
+    \sum_{i=1}^{n} r_{j,i}^{2}
+    +
+    \frac{N-n}{N}
+    K_{\mathrm{var},j,\mathrm{fwd}}^2 .
+\end{equation}
+
+The projected final realized volatility is then:
+
+\begin{equation}
+    \widehat{\mathrm{FRV}}_j
+    =
+    100 \sqrt{\widehat{\sigma}_{j}^{2}} .
+\end{equation}
+
+The interim mark-to-market approximation uses the same payoff function with $\widehat{\mathrm{FRV}}_j$ replacing the unknown final $\mathrm{FRV}_j$:
+
+\begin{equation}
+    \widehat{\Pi}_{\mathrm{disp}}
+    =
+    \sum_{j \in \mathcal{S}}
+    A_j
+    \left(
+        \min(\widehat{\mathrm{FRV}}_j, C_j) - K_j
+    \right)
+    -
+    A_I
+    \left(
+        \min(\widehat{\mathrm{FRV}}_I, C_I) - K_I
+    \right).
+\end{equation}
+
+\section{Implied Variance Input}
+
+The theoretically cleaner input for the remaining period is a forward variance swap rate, not simply ATM implied volatility squared. The variance swap rate is extracted from a slice of the option surface at a fixed maturity $T$ by integrating across strikes.
+
+Let $F(T)$ be the forward price for expiry $T$, and let $Q(K,T)$ denote the undiscounted price of the out-of-the-money option with strike $K$ and maturity $T$:
+
+\begin{equation}
+    Q(K,T)
+    =
+    \begin{cases}
+        P(K,T), & K < F(T), \\
+        C(K,T), & K > F(T),
+    \end{cases}
+\end{equation}
+
+where $P(K,T)$ is the put price and $C(K,T)$ is the call price. A continuous-strike approximation to the annualized variance swap rate is:
+
+\begin{equation}
+    K_{\mathrm{var}}^2(T)
+    \approx
+    \frac{2}{T}
+    \left[
+        \int_{0}^{F(T)}
+        \frac{P(K,T)}{K^2}
+        dK
+        +
+        \int_{F(T)}^{\infty}
+        \frac{C(K,T)}{K^2}
+        dK
+    \right].
+\end{equation}
+
+Equivalently:
+
+\begin{equation}
+    K_{\mathrm{var}}^2(T)
+    \approx
+    \frac{2}{T}
+    \int_{0}^{\infty}
+    \frac{Q(K,T)}{K^2}
+    dK .
+\end{equation}
+
+The integral is across strikes on one fixed-expiry $T$ slice of the volatility surface. The option surface has two dimensions, strike and maturity; this calculation freezes maturity at $T$ and integrates only in the strike direction. The division by $T$ converts the option strip's implied total variance over $[0,T]$ into an annualized variance rate.
+
+In practice, the continuous integral is replaced by a discrete sum over listed strikes:
+
+\begin{equation}
+    K_{\mathrm{var}}^2(T)
+    \approx
+    \frac{2}{T}
+    \sum_m
+    \frac{\Delta K_m}{K_m^2}
+    Q(K_m,T),
+\end{equation}
+
+where $\Delta K_m$ is the strike interval around strike $K_m$. Market implementations also handle discounting, forwards, dividends, settlement conventions, bid-ask filtering, and far-wing extrapolation. The key point is that the full smile matters; a single ATM volatility does not capture skew or tail option prices.
+
+For a remaining period from $T_1$ to $T_2$, use total implied variance and difference it:
+
+\begin{equation}
+    K_{\mathrm{var},\mathrm{fwd}}^2(T_1,T_2)
+    =
+    \frac{
+        T_2 K_{\mathrm{var}}^2(T_2)
+        -
+        T_1 K_{\mathrm{var}}^2(T_1)
+    }{
+        T_2 - T_1
+    }.
+\end{equation}
+
+If the calculation date is today and the only remaining maturity is the final valuation date, then $T_1=0$ and the forward variance rate reduces to the variance swap rate for the final maturity slice:
+
+\begin{equation}
+    K_{\mathrm{var},\mathrm{fwd}}^2(0,T)
+    =
+    K_{\mathrm{var}}^2(T).
+\end{equation}
+
+If only ATM implied volatility is available, a rough proxy is:
+
+\begin{equation}
+    K_{\mathrm{var},j,\mathrm{fwd}}^2
+    \approx
+    \sigma_{\mathrm{ATM},j,\mathrm{fwd}}^2 .
+\end{equation}
+
+This proxy is acceptable for a quick sensitivity check, but it is not a true implied variance calculation. It will be most unreliable when the underlying has strong skew, wide wings, event risk, or sparse option strikes.
+
+\end{document}

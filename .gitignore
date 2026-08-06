@@ -162,6 +162,7 @@ cython_debug/
 /mpe_xgboost_project/.idea
 .DS_Store
 /ClassicOptionPricing/pythonScript/EqDispersion
+/ClassicOptionPricing/pythonScript/EquityDispersion/EqDispersion
 ClassicOptionPricing/pythonScript/EquitySpreadOptionContingentOnFx/params.yaml
 /alpaca_trading_project
 /Trading
