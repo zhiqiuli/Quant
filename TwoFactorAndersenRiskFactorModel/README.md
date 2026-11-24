@@ -4,8 +4,7 @@ A showcase of a project that fits the two-factor Andersen model (Andersen, 2010)
 implied and historical vol curves for potential-future-exposure risk-factor modelling.
 
 This folder contains a short overview and a few demos that run on **synthetic data**. The full
-implementation (market-data pipeline, calibration for WTI, Brent and Henry Hub, seasonality) is kept
-in a private repository and is available on request.
+implementation (market-data pipeline, calibration for WTI, Brent and Henry Hub, seasonality) is available on request.
 
 ## Contents
 
