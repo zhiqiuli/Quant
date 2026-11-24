@@ -41,18 +41,21 @@ def main(seed=7):
     grid = np.linspace(0, 2.0, 200)
     assert np.all(sigma12(grid, fit_atm) > sigma12(grid, fit_hist)), "implied should sit above historical"
 
-    fig, ax = plt.subplots(figsize=(5.5, 5.5))
-    ax.plot(T, atm, "^", ms=5, color="tab:blue", label="synthetic ATM implied vol")
-    ax.plot(grid, sigma12(grid, fit_atm), "-", color="tab:blue", label="fitted ATM")
-    ax.plot(T, hist, "o", ms=4, color="tab:orange", label="synthetic historical vol")
-    ax.plot(grid, sigma12(grid, fit_hist), "--", color="tab:orange", label="fitted hist")
+    blue, orange = "#1f77b4", "#d95f02"
+    fig, ax = plt.subplots(figsize=(8, 6))                 # 4:3 figure and plot area, same look as the full project
+    ax.set_box_aspect(3 / 4)
+    ax.plot(T, atm, "^", ms=5, color=blue, label="ATM vol")
+    ax.plot(grid, sigma12(grid, fit_atm), "-", lw=1.6, color=blue, label="Fitted ATM")
+    ax.plot(T, hist, "o", ms=4, color=orange, label="Hist vol")
+    ax.plot(grid, sigma12(grid, fit_hist), "--", lw=1.6, color=orange, label="Fitted hist")
     ax.set_xlabel("contract (in years)")
     ax.set_ylabel("vol")
     ax.set_title("Two-factor Andersen curves fitted to synthetic data", fontsize=9)
     ax.grid(alpha=0.3)
-    ax.legend()
+    ax.legend(fontsize=8, loc="upper right")
+    fig.tight_layout()
     OUT.parent.mkdir(exist_ok=True)
-    fig.savefig(OUT, dpi=150, bbox_inches="tight")
+    fig.savefig(OUT, dpi=150)
     print(f"saved {OUT}")
 
 
