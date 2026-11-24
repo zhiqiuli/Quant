@@ -166,3 +166,13 @@ cython_debug/
 ClassicOptionPricing/pythonScript/EquitySpreadOptionContingentOnFx/params.yaml
 /alpaca_trading_project
 /Trading
+
+# TwoFactorAndersenRiskFactorModel: only the showcase folder is public.
+# The developer folder (full code, data cache, notes) and the data-access notes stay local.
+/TwoFactorAndersenRiskFactorModel_Dev/
+/DatabentoAccessNotes.md
+*.duckdb
+*.duckdb.wal
+*.aux
+*.log
+*.out
